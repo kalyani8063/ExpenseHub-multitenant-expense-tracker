@@ -34,6 +34,7 @@ export const expenseSchema = pgTable('expense', {
   amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
   category: text('category').notNull(),
   description: text('description'),
+  receiptUrl: text('receipt_url'),
   date: timestamp('date', { mode: 'date' }).notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
 }, table => [

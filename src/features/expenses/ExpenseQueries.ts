@@ -26,7 +26,9 @@ export const getOrganizationExpenses = async () => {
  * @param input The validated, user-supplied fields of the expense.
  * @returns The created expense row.
  */
-export const insertOrganizationExpense = async (input: CreateExpenseInput) => {
+export const insertOrganizationExpense = async (
+  input: CreateExpenseInput & { receiptUrl?: string },
+) => {
   const { organizationId, userId } = await getExpenseTenant();
 
   const [expense] = await db
@@ -38,6 +40,7 @@ export const insertOrganizationExpense = async (input: CreateExpenseInput) => {
       amount: input.amount,
       category: input.category,
       description: input.description,
+      receiptUrl: input.receiptUrl,
       date: new Date(input.date),
     })
     .returning();

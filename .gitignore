@@ -55,6 +55,9 @@ next-env.d.ts
 # Database
 *.db
 
+# Local receipt uploads
+/public/uploads/receipts/
+
 # storybook
 storybook-static
 *storybook.log

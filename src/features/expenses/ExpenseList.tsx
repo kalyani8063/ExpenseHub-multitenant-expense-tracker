@@ -31,6 +31,7 @@ export const ExpenseList = async () => {
             <th>{t('table_date')}</th>
             <th>{t('table_category')}</th>
             <th>{t('table_description')}</th>
+            <th>Receipt</th>
             <th className="text-right">{t('table_amount')}</th>
           </tr>
         </thead>
@@ -53,6 +54,11 @@ export const ExpenseList = async () => {
               <td>{expense.category}</td>
               <td className="text-muted-foreground">
                 {expense.description ?? '—'}
+              </td>
+              <td>
+                {expense.receiptUrl
+                  ? <a className="text-primary underline" href={expense.receiptUrl}>View</a>
+                  : '—'}
               </td>
               <td className="text-right font-medium whitespace-nowrap">
                 {format.number(Number(expense.amount), {

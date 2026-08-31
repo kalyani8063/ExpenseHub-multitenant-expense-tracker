@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { logger } from '@/libs/Logger';
 import { insertOrganizationExpense } from './ExpenseQueries';
+import { getExpenseTenant } from './ExpenseTenant';
+import { saveReceiptLocally } from './ReceiptStorage';
 import { CreateExpenseValidation } from './ExpenseValidation';
 
 export type CreateExpenseState = {
@@ -36,7 +38,15 @@ export const createExpenseAction = async (
   }
 
   try {
-    await insertOrganizationExpense(parsed.data);
+    const receipt = formData.get('receipt');
+    let receiptUrl: string | undefined;
+
+    if (receipt instanceof File && receipt.size > 0) {
+      const { organizationId } = await getExpenseTenant();
+      receiptUrl = await saveReceiptLocally(receipt, organizationId);
+    }
+
+    await insertOrganizationExpense({ ...parsed.data, receiptUrl });
   } catch (error) {
     logger.error(
       `Failed to create expense: ${error instanceof Error ? error.message : String(error)}`,
