@@ -1,12 +1,25 @@
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { getOrganizationExpenses } from './ExpenseQueries';
+import { getExpenseTenant } from './ExpenseTenant';
+import { resolveReceiptUrl } from './ReceiptStorage';
 
 export const ExpenseList = async () => {
   const t = await getTranslations('ExpensesPage');
   const format = await getFormatter();
 
   // Tenant-scoped by `getExpenseTenant()`, the caller cannot widen the scope.
-  const expenses = await getOrganizationExpenses();
+  const [rows, { organizationId }] = await Promise.all([
+    getOrganizationExpenses(),
+    getExpenseTenant(),
+  ]);
+
+  // Private Cloud Storage receipts need a short-lived signed URL per render.
+  const expenses = await Promise.all(rows.map(async expense => ({
+    ...expense,
+    receiptUrl: expense.receiptUrl
+      ? await resolveReceiptUrl(expense.receiptUrl, organizationId)
+      : null,
+  })));
 
   if (expenses.length === 0) {
     return (
@@ -57,7 +70,7 @@ export const ExpenseList = async () => {
               </td>
               <td>
                 {expense.receiptUrl
-                  ? <a className="text-primary underline" href={expense.receiptUrl}>{t('receipt_view')}</a>
+                  ? <a className="text-primary underline" href={expense.receiptUrl} target="_blank" rel="noopener noreferrer">{t('receipt_view')}</a>
                   : '—'}
               </td>
               <td className="text-right font-medium whitespace-nowrap">
