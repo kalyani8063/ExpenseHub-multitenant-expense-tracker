@@ -5,7 +5,7 @@ import { logger } from '@/libs/Logger';
 import { insertOrganizationExpense } from './ExpenseQueries';
 import { getExpenseTenant } from './ExpenseTenant';
 import { CreateExpenseValidation } from './ExpenseValidation';
-import { saveReceiptLocally } from './ReceiptStorage';
+import { saveReceipt } from './ReceiptStorage';
 
 export type CreateExpenseState = {
   status: 'idle' | 'success' | 'error';
@@ -43,7 +43,7 @@ export const createExpenseAction = async (
 
     if (receipt instanceof File && receipt.size > 0) {
       const { organizationId } = await getExpenseTenant();
-      receiptUrl = await saveReceiptLocally(receipt, organizationId);
+      receiptUrl = await saveReceipt(receipt, organizationId);
     }
 
     await insertOrganizationExpense({ ...parsed.data, receiptUrl });
