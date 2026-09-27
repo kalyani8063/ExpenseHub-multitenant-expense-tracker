@@ -38,40 +38,6 @@
     "feature6_title": "Secure by design",
     "feature6_description": "Authentication and organization membership are handled by Clerk, so access control is never an afterthought."
   },
-  "Pricing": {
-    "section_subtitle": "Pricing",
-    "section_title": "Plans that grow with your organization",
-    "section_description": "Start free, and upgrade as your organization tracks more expenses.",
-    "button_text": "Get started"
-  },
-  "PricingPlans": {
-    "free_plan_name": "Free",
-    "premium_plan_name": "Premium",
-    "enterprise_plan_name": "Enterprise"
-  },
-  "PricingCard": {
-    "free_plan_description": "For individuals",
-    "premium_plan_description": "For small teams",
-    "enterprise_plan_description": "For industry leaders",
-    "plan_price": "${price}",
-    "plan_interval_month": "/ month",
-    "plan_interval_year": "/ year"
-  },
-  "PricingFeatures": {
-    "feature_team_member": "Up to {number} team members",
-    "feature_website": "Up to {number} websites",
-    "feature_storage": "{number} GB of storage",
-    "feature_transfer": "{number} TB of transfer",
-    "feature_email_support": "Email support"
-  },
-  "SponsorLogos": {
-    "sponsored_by": "Sponsored by",
-    "clerk_logo": "Clerk logo",
-    "sentry_logo": "Sentry logo",
-    "crowdin_logo": "Crowdin logo",
-    "arcjet_logo": "Arcjet logo",
-    "coderabbit_logo": "CodeRabbit logo"
-  },
   "FAQ": {
     "question_1": "How does ExpenseHub keep my organization's data separate from others?",
     "answer_1": "Every expense record is tagged with an organization ID that comes from your authenticated session, never from user input, and every database query is filtered by it. Organizations can never read or write each other's data.",
