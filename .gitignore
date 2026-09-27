@@ -67,3 +67,7 @@ build-archive.log
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# Ansible deployment settings and secrets
+deploy/ansible/inventory.ini
+deploy/ansible/secrets.yml

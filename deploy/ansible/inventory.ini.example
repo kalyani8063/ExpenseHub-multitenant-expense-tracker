@@ -1,0 +1,19 @@
+# Copy to inventory.ini (gitignored) and replace every YOUR_... value.
+
+[expensehub]
+expensehub-vm
+
+[expensehub:vars]
+# Your Cloud Shell username (run `whoami` in Cloud Shell).
+ansible_user=YOUR_USERNAME
+ansible_ssh_private_key_file=~/.ssh/google_compute_engine
+# SSH goes through Identity-Aware Proxy, so port 22 is never open to the internet.
+ansible_ssh_common_args=-o StrictHostKeyChecking=accept-new -o ProxyCommand="gcloud compute start-iap-tunnel %h 22 --listen-on-stdin --zone=us-central1-a"
+
+gcp_project=YOUR_PROJECT_ID
+gcp_region=us-central1
+gcs_bucket=YOUR_PROJECT_ID-receipts
+# Private IP of the Cloud SQL instance:
+#   gcloud sql instances describe expensehub-db --format="value(ipAddresses[0].ipAddress)"
+db_private_ip=YOUR_CLOUD_SQL_PRIVATE_IP
+image_tag=latest

@@ -4,6 +4,16 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
+# One-off job that applies database migrations, then exits.
+# Build it with `--target migrator`; it needs DATABASE_URL at run time.
+FROM dependencies AS migrator
+
+COPY drizzle.config.ts ./
+COPY migrations ./migrations
+COPY src/models ./src/models
+
+CMD ["npx", "drizzle-kit", "migrate"]
+
 FROM node:24-bookworm-slim AS builder
 
 WORKDIR /app

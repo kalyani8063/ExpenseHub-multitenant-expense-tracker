@@ -1,0 +1,103 @@
+# Configures the Compute Engine VM and (re)deploys ExpenseHub on it.
+# Safe to re-run: every task only changes what is not already in place.
+#
+#   ansible-playbook playbook.yml
+#
+# See README.md in this folder for the one-time setup.
+
+- name: Deploy ExpenseHub to the Compute Engine VM
+  hosts: expensehub
+  become: true
+  vars_files:
+    - secrets.yml
+
+  tasks:
+    - name: Install Docker and the Python Docker SDK
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - python3-docker
+        state: present
+        update_cache: true
+
+    - name: Start Docker now and on every boot
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    # An e2-micro VM has 1 GB of RAM; swap keeps Node.js from being killed
+    # when memory runs short.
+    - name: Check whether the swap file exists
+      ansible.builtin.stat:
+        path: /swapfile
+      register: swapfile
+
+    - name: Create and enable a 2 GB swap file
+      when: not swapfile.stat.exists
+      ansible.builtin.shell: |
+        fallocate -l 2G /swapfile
+        chmod 600 /swapfile
+        mkswap /swapfile
+        swapon /swapfile
+      changed_when: true
+
+    - name: Keep swap enabled after reboots
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        line: /swapfile none swap sw 0 0
+
+    # Uses the VM's service account, so no registry password is stored.
+    - name: Let Docker pull from Artifact Registry
+      ansible.builtin.command:
+        cmd: gcloud auth configure-docker {{ gcp_region }}-docker.pkg.dev --quiet
+        creates: /root/.docker/config.json
+
+    - name: Create the application directory
+      ansible.builtin.file:
+        path: /opt/expensehub
+        state: directory
+        mode: '0700'
+
+    - name: Write the runtime environment file (secrets, readable by root only)
+      ansible.builtin.template:
+        src: templates/app.env.j2
+        dest: /opt/expensehub/app.env
+        mode: '0600'
+
+    - name: Pull the application and migration images
+      community.docker.docker_image:
+        name: '{{ item }}'
+        source: pull
+        force_source: true
+      loop:
+        - '{{ app_image }}'
+        - '{{ migrator_image }}'
+
+    - name: Apply database migrations
+      community.docker.docker_container:
+        name: expensehub-migrate
+        image: '{{ migrator_image }}'
+        env_file: /opt/expensehub/app.env
+        detach: false
+        cleanup: true
+        state: started
+
+    - name: Run the ExpenseHub container on port 80
+      community.docker.docker_container:
+        name: expensehub
+        image: '{{ app_image }}'
+        env_file: /opt/expensehub/app.env
+        published_ports:
+          - 80:3000
+        restart_policy: unless-stopped
+        state: started
+
+    - name: Wait until the app answers on port 80
+      ansible.builtin.uri:
+        url: http://localhost/
+        status_code: 200
+      register: health
+      until: health.status == 200
+      retries: 12
+      delay: 5

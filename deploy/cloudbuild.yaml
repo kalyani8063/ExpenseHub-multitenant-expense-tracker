@@ -1,0 +1,30 @@
+# Builds both container images on Google Cloud and pushes them to Artifact Registry.
+# Run from the repository root:
+#   gcloud builds submit --config deploy/cloudbuild.yaml \
+#     --substitutions=_CLERK_PUBLISHABLE_KEY=pk_test_...
+
+steps:
+  - id: migrator
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --target=migrator
+      - --tag=us-central1-docker.pkg.dev/$PROJECT_ID/expensehub/migrator:latest
+      - .
+
+  - id: app
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --build-arg=NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${_CLERK_PUBLISHABLE_KEY}
+      - --tag=us-central1-docker.pkg.dev/$PROJECT_ID/expensehub/app:latest
+      - .
+
+images:
+  - us-central1-docker.pkg.dev/$PROJECT_ID/expensehub/migrator:latest
+  - us-central1-docker.pkg.dev/$PROJECT_ID/expensehub/app:latest
+
+substitutions:
+  _CLERK_PUBLISHABLE_KEY: ''
+
+timeout: 1800s

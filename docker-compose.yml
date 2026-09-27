@@ -1,0 +1,67 @@
+# Runs the full ExpenseHub stack locally as three linked containers:
+#   db      -> PostgreSQL, data kept in a named volume
+#   migrate -> applies database migrations once, then exits
+#   app     -> the Next.js production server on http://localhost:3000
+#
+# The containers find each other by service name ("db") on the network Compose
+# creates, which replaces the legacy `docker run --link` flag.
+#
+# Usage:
+#   docker compose up --build     # start everything
+#   docker compose down           # stop (add -v to also delete the database)
+#
+# Requires `.env.local` with CLERK_SECRET_KEY and NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.
+
+name: expensehub
+
+x-database-url: &database-url postgresql://expensehub:expensehub@db:5432/expensehub
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: expensehub
+      POSTGRES_PASSWORD: expensehub
+      POSTGRES_DB: expensehub
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U expensehub -d expensehub]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      target: migrator
+    environment:
+      DATABASE_URL: *database-url
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build:
+      context: .
+      target: runner
+      args:
+        # Read from `.env` in this folder; it is a public key.
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+    env_file:
+      - .env
+      - .env.local
+    environment:
+      # Overrides the local-development DATABASE_URL from `.env`.
+      DATABASE_URL: *database-url
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  db-data:
