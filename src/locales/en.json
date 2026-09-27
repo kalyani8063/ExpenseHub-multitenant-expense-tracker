@@ -138,6 +138,7 @@
     "form_date_label": "Date",
     "form_description_label": "Description",
     "form_description_placeholder": "Optional",
+    "form_receipt_label": "Receipt image (optional)",
     "form_submit": "Add expense",
     "form_submitting": "Adding...",
     "form_success": "Expense added.",
@@ -146,7 +147,9 @@
     "table_date": "Date",
     "table_category": "Category",
     "table_description": "Description",
-    "table_amount": "Amount"
+    "table_receipt": "Receipt",
+    "table_amount": "Amount",
+    "receipt_view": "View"
   },
   "UserProfilePage": {
     "title_bar": "User Profile",
