@@ -86,6 +86,7 @@
   "DashboardIndexPage": {
     "title_bar": "Aperçu",
     "title_bar_description": "Les dépenses de votre organisation en un coup d'œil",
+    "title_bar_description_member": "Vos propres dépenses en un coup d'œil",
     "stat_total_label": "Total ce mois-ci",
     "stat_count_label": "Dépenses ce mois-ci",
     "stat_top_category_label": "Catégorie principale",
@@ -115,7 +116,11 @@
     "table_description": "Description",
     "table_receipt": "Reçu",
     "table_amount": "Montant",
-    "receipt_view": "Voir"
+    "table_actions": "Actions",
+    "receipt_view": "Voir",
+    "delete_button": "Supprimer",
+    "scope_admin": "Vous êtes administrateur : toutes les dépenses de l'organisation sont affichées.",
+    "scope_member": "Vous êtes membre : seules les dépenses que vous avez ajoutées sont affichées."
   },
   "UserProfilePage": {
     "title_bar": "Profil utilisateur",

@@ -23,3 +23,7 @@ export const CreateExpenseValidation = z.object({
 });
 
 export type CreateExpenseInput = z.infer<typeof CreateExpenseValidation>;
+
+export const DeleteExpenseValidation = z.object({
+  id: z.coerce.number().int().positive(),
+});

@@ -2,9 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { logger } from '@/libs/Logger';
-import { insertOrganizationExpense } from './ExpenseQueries';
+import { deleteOrganizationExpense, insertOrganizationExpense } from './ExpenseQueries';
 import { getExpenseTenant } from './ExpenseTenant';
-import { CreateExpenseValidation } from './ExpenseValidation';
+import { CreateExpenseValidation, DeleteExpenseValidation } from './ExpenseValidation';
 import { saveReceipt } from './ReceiptStorage';
 
 export type CreateExpenseState = {
@@ -58,4 +58,33 @@ export const createExpenseAction = async (
   revalidatePath('/dashboard/expenses');
 
   return { status: 'success' };
+};
+
+/**
+ * Server Action backing the admin-only "delete" button.
+ *
+ * Only the expense `id` comes from the form. The admin check and the
+ * organization filter both happen in `deleteOrganizationExpense`, so a member
+ * posting this action directly is still refused.
+ * @param formData The submitted form fields.
+ */
+export const deleteExpenseAction = async (formData: FormData) => {
+  const parsed = DeleteExpenseValidation.safeParse({ id: formData.get('id') });
+
+  if (!parsed.success) {
+    return;
+  }
+
+  try {
+    await deleteOrganizationExpense(parsed.data.id);
+  } catch (error) {
+    logger.error(
+      `Failed to delete expense: ${error instanceof Error ? error.message : String(error)}`,
+    );
+
+    return;
+  }
+
+  revalidatePath('/dashboard/expenses');
+  revalidatePath('/dashboard');
 };
