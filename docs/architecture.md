@@ -18,7 +18,7 @@ flowchart LR
 
     subgraph gcp [Google Cloud project: expensehub]
         subgraph iaas [IaaS]
-            vm["Compute Engine VM<br/>e2-micro, Container-Optimized OS<br/>runs the ExpenseHub container"]
+            vm["Compute Engine VM<br/>e2-micro, Debian 12, Docker<br/>configured by Ansible"]
         end
         subgraph paas [PaaS / managed services]
             sql[("Cloud SQL<br/>PostgreSQL")]
@@ -76,20 +76,43 @@ is never the only protection.
 
 ## 3. Containerization
 
-The application ships as a Docker image built by a **multi-stage `Dockerfile`**:
+The application ships as Docker images built by a **multi-stage `Dockerfile`**:
 
 1. **dependencies**: installs all npm packages (`npm ci`).
-2. **builder**: compiles the Next.js production build.
-3. **runner**: a slim `node:24-bookworm-slim` image containing only production
-   dependencies and the build output.
+2. **migrator**: a small one-off image that applies database migrations with
+   Drizzle Kit and exits.
+3. **builder**: compiles the Next.js production build.
+4. **runner**: a slim `node:24-bookworm-slim` image containing only production
+   dependencies and the build output. This is the default target.
 
 Secrets (`CLERK_SECRET_KEY`, `DATABASE_URL`) are **not baked into the image**. They
 are injected as environment variables when the container starts, so the same
 image runs in every environment.
 
-In the cloud, **Cloud Build** builds the image from the repository and pushes it
-to **Artifact Registry**. The VM pulls it from there, so no developer machine
-needs Docker installed.
+### Orchestration with Docker Compose
+
+`docker-compose.yml` runs the whole stack locally as three linked containers:
+
+| Service | Image | Role |
+|---|---|---|
+| `db` | `postgres:17-alpine` | Database, data kept in a named volume |
+| `migrate` | Dockerfile target `migrator` | Applies migrations once, then exits |
+| `app` | Dockerfile target `runner` | The Next.js server on port 3000 |
+
+Compose controls the **start order**: `migrate` waits until `db` passes its health
+check, and `app` waits until `migrate` has finished successfully.
+
+**Container linking:** Compose puts the services on a private network where each
+one is reachable by its service name, so the app connects to `db:5432`. This
+replaces the legacy `docker run --link` flag, which injected the other container's
+address into environment variables and `/etc/hosts` and only worked on the default
+bridge network.
+
+### In the cloud
+
+**Cloud Build** builds both images from the repository (`deploy/cloudbuild.yaml`)
+and pushes them to **Artifact Registry**. The VM pulls them from there, so no
+developer machine needs Docker installed.
 
 ## 4. Storage
 
@@ -165,7 +188,8 @@ flowchart LR
     ci -->|merge to main| main[main branch]
     main -->|gcloud builds submit| cb[Cloud Build]
     cb --> ar[Artifact Registry]
-    ar -->|pull + restart| vm[Compute Engine VM]
+    ans["Ansible playbook<br/>(run from Cloud Shell)"] -->|SSH via IAP| vm[Compute Engine VM]
+    ar -->|pull images| vm
 ```
 
 - **Local quality gates:** Lefthook runs lint, type checking and knip before every
@@ -173,8 +197,16 @@ flowchart LR
 - **Continuous integration:** every pull request runs lint, type checking,
   dependency checks (knip), translation checks, unit tests, Storybook tests,
   Playwright end-to-end tests in Chromium and Firefox, and a production build.
-- **Delivery:** Cloud Build turns the repository into an image in Artifact
-  Registry, and the VM runs the new image.
+- **Delivery:** Cloud Build turns the repository into images in Artifact
+  Registry.
+- **Configuration management with Ansible:** `deploy/ansible/playbook.yml`
+  describes the VM's desired state: Docker installed, swap enabled, registry
+  access configured, secrets file written with root-only permissions,
+  migrations applied and the app container running. Running it again only
+  changes what differs (idempotence), so the same command does the first setup
+  and every later deployment. Secrets are kept in an **Ansible Vault**-encrypted
+  file, and Ansible reaches the VM over SSH tunnelled through Identity-Aware
+  Proxy, so port 22 is never open to the internet.
 
 ## 7. Billing and service management
 

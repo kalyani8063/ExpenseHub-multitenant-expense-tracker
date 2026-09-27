@@ -1,0 +1,4 @@
+# Derived settings. Project-specific values live in inventory.ini.
+artifact_repo: '{{ gcp_region }}-docker.pkg.dev/{{ gcp_project }}/expensehub'
+app_image: '{{ artifact_repo }}/app:{{ image_tag }}'
+migrator_image: '{{ artifact_repo }}/migrator:{{ image_tag }}'
