@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { TitleBar } from '@/features/dashboard/TitleBar';
 import { getOrganizationExpenseSummary } from '@/features/expenses/ExpenseQueries';
+import { getExpenseTenant } from '@/features/expenses/ExpenseTenant';
 import { Link } from '@/libs/I18nNavigation';
 
 export default async function DashboardIndexPage(props: {
@@ -15,14 +16,17 @@ export default async function DashboardIndexPage(props: {
   const format = await getFormatter();
 
   // Tenant-scoped by `getExpenseTenant()`, the caller cannot widen the scope.
-  const summary = await getOrganizationExpenseSummary();
+  const [summary, { isAdmin }] = await Promise.all([
+    getOrganizationExpenseSummary(),
+    getExpenseTenant(),
+  ]);
   const topCategory = summary.byCategory[0];
 
   return (
     <>
       <TitleBar
         title={t('title_bar')}
-        description={t('title_bar_description')}
+        description={isAdmin ? t('title_bar_description') : t('title_bar_description_member')}
       />
 
       <div className="

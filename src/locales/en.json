@@ -86,6 +86,7 @@
   "DashboardIndexPage": {
     "title_bar": "Overview",
     "title_bar_description": "Your organization's spending at a glance",
+    "title_bar_description_member": "Your own spending at a glance",
     "stat_total_label": "Total this month",
     "stat_count_label": "Expenses this month",
     "stat_top_category_label": "Top category",
@@ -115,7 +116,11 @@
     "table_description": "Description",
     "table_receipt": "Receipt",
     "table_amount": "Amount",
-    "receipt_view": "View"
+    "table_actions": "Actions",
+    "receipt_view": "View",
+    "delete_button": "Delete",
+    "scope_admin": "You are an admin: showing every expense in this organization.",
+    "scope_member": "You are a member: showing only the expenses you added."
   },
   "UserProfilePage": {
     "title_bar": "User Profile",

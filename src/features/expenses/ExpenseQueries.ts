@@ -1,3 +1,4 @@
+import type { ExpenseTenant } from './ExpenseTenant';
 import type { CreateExpenseInput } from './ExpenseValidation';
 import { and, desc, eq, gte, lt } from 'drizzle-orm';
 import { db } from '@/libs/DB';
@@ -5,20 +6,66 @@ import { expenseSchema } from '@/models/Schema';
 import { getExpenseTenant } from './ExpenseTenant';
 
 /**
- * Lists the expenses of the caller's organization, newest first.
+ * Builds the row filter for what the caller is allowed to see.
+ *
+ * Every tenant is limited to its own organization. On top of that, admins see
+ * all of the organization's expenses while members only see the ones they
+ * created themselves.
+ * @param tenant The session-derived tenant from `getExpenseTenant()`.
+ * @returns The Drizzle `where` condition.
+ */
+const visibleExpenses = (tenant: ExpenseTenant) =>
+  tenant.isAdmin
+    ? eq(expenseSchema.organizationId, tenant.organizationId)
+    : and(
+        eq(expenseSchema.organizationId, tenant.organizationId),
+        eq(expenseSchema.ownerId, tenant.userId),
+      );
+
+/**
+ * Lists the expenses visible to the caller, newest first.
  *
  * The `organizationId` filter comes from the Clerk session, so this query can
  * never return rows belonging to another tenant.
- * @returns The expenses owned by the active organization.
+ * @returns The organization's expenses for admins, the caller's own for members.
  */
 export const getOrganizationExpenses = async () => {
-  const { organizationId } = await getExpenseTenant();
+  const tenant = await getExpenseTenant();
 
   return db
     .select()
     .from(expenseSchema)
-    .where(eq(expenseSchema.organizationId, organizationId))
+    .where(visibleExpenses(tenant))
     .orderBy(desc(expenseSchema.date), desc(expenseSchema.id));
+};
+
+/**
+ * Deletes one expense of the caller's organization. Admins only.
+ *
+ * The row is matched on both `id` and `organizationId`, so guessing another
+ * organization's expense id deletes nothing (no IDOR).
+ * @param id The expense id submitted by the client.
+ * @returns Whether a row was deleted.
+ * @throws When the caller is not an admin of the active organization.
+ */
+export const deleteOrganizationExpense = async (id: number) => {
+  const { organizationId, isAdmin } = await getExpenseTenant();
+
+  if (!isAdmin) {
+    throw new Error('Forbidden: only organization admins can delete expenses.');
+  }
+
+  const deleted = await db
+    .delete(expenseSchema)
+    .where(
+      and(
+        eq(expenseSchema.id, id),
+        eq(expenseSchema.organizationId, organizationId),
+      ),
+    )
+    .returning({ id: expenseSchema.id });
+
+  return deleted.length > 0;
 };
 
 /**
@@ -60,15 +107,15 @@ export type ExpenseMonthSummary = {
 };
 
 /**
- * Summarizes the caller's organization expenses for the current calendar month.
+ * Summarizes the expenses visible to the caller for the current calendar month.
  *
  * Scoped the same way as `getOrganizationExpenses`: the `organizationId`
  * filter comes from the Clerk session, so the aggregate can never mix in
- * another tenant's data.
+ * another tenant's data, and members only see their own spending.
  * @returns The current month's total amount, expense count, and per-category totals.
  */
 export const getOrganizationExpenseSummary = async (): Promise<ExpenseMonthSummary> => {
-  const { organizationId } = await getExpenseTenant();
+  const tenant = await getExpenseTenant();
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -79,7 +126,7 @@ export const getOrganizationExpenseSummary = async (): Promise<ExpenseMonthSumma
     .from(expenseSchema)
     .where(
       and(
-        eq(expenseSchema.organizationId, organizationId),
+        visibleExpenses(tenant),
         gte(expenseSchema.date, startOfMonth),
         lt(expenseSchema.date, startOfNextMonth),
       ),
