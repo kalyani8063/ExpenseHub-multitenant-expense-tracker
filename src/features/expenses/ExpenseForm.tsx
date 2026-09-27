@@ -79,14 +79,14 @@ export const ExpenseForm = () => {
           />
         </label>
         <label className="flex flex-col gap-1.5 text-sm font-medium">
-  Receipt image (optional)
-  <input
-    className={fieldClassName}
-    type="file"
-    name="receipt"
-    accept="image/*"
-  />
-</label>
+          {t('form_receipt_label')}
+          <input
+            className={fieldClassName}
+            type="file"
+            name="receipt"
+            accept="image/jpeg,image/png,image/webp"
+          />
+        </label>
       </div>
 
       <div className="mt-4 flex items-center gap-x-3">

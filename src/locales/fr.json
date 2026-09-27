@@ -38,40 +38,6 @@
     "feature6_title": "Sécurisé par conception",
     "feature6_description": "L'authentification et l'appartenance aux organisations sont gérées par Clerk, le contrôle d'accès n'est donc jamais une réflexion après coup."
   },
-  "Pricing": {
-    "section_subtitle": "Tarifs",
-    "section_title": "Des offres qui grandissent avec votre organisation",
-    "section_description": "Commencez gratuitement, puis évoluez à mesure que votre organisation suit davantage de dépenses.",
-    "button_text": "Commencer"
-  },
-  "PricingPlans": {
-    "free_plan_name": "Gratuit",
-    "premium_plan_name": "Premium",
-    "enterprise_plan_name": "Enterprise"
-  },
-  "PricingCard": {
-    "free_plan_description": "Pour les particuliers",
-    "premium_plan_description": "Pour les petites équipes",
-    "enterprise_plan_description": "Pour les leaders du secteur",
-    "plan_price": "${price}",
-    "plan_interval_month": "/ mois",
-    "plan_interval_year": "/ an"
-  },
-  "PricingFeatures": {
-    "feature_team_member": "Jusqu'à {number} membres",
-    "feature_website": "Jusqu'à {number} sites web",
-    "feature_storage": "{number} Go de stockage",
-    "feature_transfer": "{number} To de transfert",
-    "feature_email_support": "Support par email"
-  },
-  "SponsorLogos": {
-    "sponsored_by": "Sponsorisé par",
-    "clerk_logo": "Logo Clerk",
-    "sentry_logo": "Logo Sentry",
-    "crowdin_logo": "Logo Crowdin",
-    "arcjet_logo": "Logo Arcjet",
-    "coderabbit_logo": "Logo CodeRabbit"
-  },
   "FAQ": {
     "question_1": "Comment ExpenseHub garde-t-il les données de mon organisation séparées de celles des autres ?",
     "answer_1": "Chaque dépense est associée à un identifiant d'organisation provenant de votre session authentifiée, jamais d'une saisie utilisateur, et chaque requête à la base de données est filtrée selon cet identifiant. Les organisations ne peuvent jamais lire ni écrire les données d'une autre.",
@@ -138,6 +104,7 @@
     "form_date_label": "Date",
     "form_description_label": "Description",
     "form_description_placeholder": "Facultatif",
+    "form_receipt_label": "Image du reçu (facultatif)",
     "form_submit": "Ajouter la dépense",
     "form_submitting": "Ajout en cours...",
     "form_success": "Dépense ajoutée.",
@@ -146,7 +113,9 @@
     "table_date": "Date",
     "table_category": "Catégorie",
     "table_description": "Description",
-    "table_amount": "Montant"
+    "table_receipt": "Reçu",
+    "table_amount": "Montant",
+    "receipt_view": "Voir"
   },
   "UserProfilePage": {
     "title_bar": "Profil utilisateur",

@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -28,7 +29,7 @@ export const saveReceiptLocally = async (
     throw new Error('Receipts must be 10 MB or smaller.');
   }
 
-  const safeOrganizationId = organizationId.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const safeOrganizationId = organizationId.replace(/[^\w-]/g, '_');
   const receiptDirectory = path.join(
     process.cwd(),
     'public',
