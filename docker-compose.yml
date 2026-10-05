@@ -23,6 +23,8 @@ services:
       POSTGRES_USER: expensehub
       POSTGRES_PASSWORD: expensehub
       POSTGRES_DB: expensehub
+    ports:
+      - '5433:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
