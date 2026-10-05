@@ -2,7 +2,8 @@ import { Buffer } from 'node:buffer';
 import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { Storage } from '@google-cloud/storage';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Env } from '@/libs/Env';
 
 const allowedReceiptTypes: Record<string, string> = {
@@ -13,17 +14,17 @@ const allowedReceiptTypes: Record<string, string> = {
 
 const maximumReceiptSize = 10 * 1024 * 1024;
 
-const signedUrlLifetimeMs = 15 * 60 * 1000;
+const signedUrlLifetimeSeconds = 15 * 60;
 
-const gcsPrefix = 'gs://';
+const s3Prefix = 's3://';
 
 // Credentials come from Application Default Credentials: the VM's attached
 // service account on Compute Engine, or `gcloud auth application-default login`
 // locally. No key file is stored in the app.
-let storageClient: Storage | undefined;
+let storageClient: S3Client | undefined;
 
 const getStorage = () => {
-  storageClient ??= new Storage();
+  storageClient ??= new S3Client({ region: 'ap-south-1' });
 
   return storageClient;
 };
@@ -67,15 +68,19 @@ export const saveReceipt = async (
   const filename = `${randomUUID()}.${extension}`;
   const contents = Buffer.from(await receipt.arrayBuffer());
 
-  if (Env.GCS_BUCKET_NAME) {
+  if (Env.S3_BUCKET_NAME) {
     const objectName = `receipts/${safeOrganizationId}/${filename}`;
 
-    await getStorage()
-      .bucket(Env.GCS_BUCKET_NAME)
-      .file(objectName)
-      .save(contents, { contentType: receipt.type, resumable: false });
+    await getStorage().send(
+      new PutObjectCommand({
+        Bucket: Env.S3_BUCKET_NAME,
+        Key: objectName,
+        Body: contents,
+        ContentType: receipt.type,
+      }),
+    );
 
-    return `${gcsPrefix}${Env.GCS_BUCKET_NAME}/${objectName}`;
+    return `${s3Prefix}${Env.S3_BUCKET_NAME}/${objectName}`;
   }
 
   const receiptDirectory = path.join(
@@ -107,12 +112,12 @@ export const resolveReceiptUrl = async (
   receiptUrl: string,
   organizationId: string,
 ): Promise<string | null> => {
-  if (!receiptUrl.startsWith(gcsPrefix)) {
+  if (!receiptUrl.startsWith(s3Prefix)) {
     return receiptUrl;
   }
 
   const [bucketName, ...objectParts] = receiptUrl
-    .slice(gcsPrefix.length)
+    .slice(s3Prefix.length)
     .split('/');
   const objectName = objectParts.join('/');
   const tenantPrefix = `receipts/${toSafeOrganizationId(organizationId)}/`;
@@ -121,14 +126,9 @@ export const resolveReceiptUrl = async (
     return null;
   }
 
-  const [signedUrl] = await getStorage()
-    .bucket(bucketName)
-    .file(objectName)
-    .getSignedUrl({
-      version: 'v4',
-      action: 'read',
-      expires: Date.now() + signedUrlLifetimeMs,
-    });
-
-  return signedUrl;
+  return getSignedUrl(
+    getStorage(),
+    new GetObjectCommand({ Bucket: bucketName, Key: objectName }),
+    { expiresIn: signedUrlLifetimeSeconds },
+  );
 };
